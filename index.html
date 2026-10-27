@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suivi uro</title>
+<meta name="theme-color" content="#1f6b5c">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#f3f5f4; --surface:#fff; --ink:#18231f; --muted:#5d6b66; --line:#d9e0dd;
+  --accent:#1f6b5c; --on-accent:#fff; --accent-soft:#e2efeb; --warn:#9a5b10; --warn-soft:#fbefdc; --alert:#a3312a; --alert-soft:#f8e3e1;
+  --f-display:"Fraunces",Georgia,serif; --f-body:"Public Sans",system-ui,-apple-system,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#111816; --surface:#18211e; --ink:#e3ebe8; --muted:#97a6a0; --line:#2b3733;
+  --accent:#6fc2ad; --on-accent:#0f1715; --accent-soft:#1d3530; --warn:#e2ad62; --warn-soft:#352a17; --alert:#ef8a82; --alert-soft:#3a1f1d; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:760px;margin:0 auto;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:calc(84px + env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;gap:16px}
+h1{font-family:var(--f-display);font-weight:600;font-size:1.7rem;margin:0;letter-spacing:-.01em}
+h2{font-family:var(--f-display);font-weight:500;font-size:1.15rem;margin:0 0 8px}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.9rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+.empty{color:var(--muted);font-size:.9rem;margin:0}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;gap:4px;padding:6px max(8px,env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left));z-index:5}
+nav button{flex:1;max-width:180px;font:inherit;font-size:.82rem;font-weight:600;background:none;border:0;color:var(--muted);padding:8px 4px;border-radius:8px;cursor:pointer}
+nav button[aria-current="true"]{color:var(--accent);background:var(--accent-soft)}
+button,select,input{font:inherit}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:8px;font-weight:600;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{color:var(--alert);border-color:var(--alert)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 13px;border-radius:999px;font-weight:600;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+label{display:grid;gap:4px;font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.02em}
+select,input{font-size:.95rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 9px;min-width:0;width:100%}
+.hint{font-size:.78rem;color:var(--muted);font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:var(--f-mono);font-size:.75rem;padding:3px 9px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-weight:500}
+.chip.hi{background:var(--alert-soft);color:var(--alert)} .chip.mid{background:var(--warn-soft);color:var(--warn)}
+.why{color:var(--muted);font-size:.86rem;margin:8px 0 0}
+.alert{border-left:3px solid var(--alert);background:var(--alert-soft);padding:8px 12px;border-radius:0 6px 6px 0;font-size:.88rem}
+.alert.info{border-color:var(--warn);background:var(--warn-soft)}
+.stack{display:grid;gap:8px}
+.list{list-style:none;margin:0;padding:0}
+.list li{border-top:1px solid var(--line)}
+.list li:first-child{border-top:0}
+.item{display:grid;grid-template-columns:6.4em 1fr auto;gap:10px;align-items:center;padding:10px 0;width:100%;background:none;border:0;color:inherit;text-align:left;cursor:pointer;font:inherit}
+.when{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:.84rem}
+.when small{display:block;color:var(--muted);font-size:.72rem}
+.what{min-width:0}
+.what strong{font-weight:600}
+.what .ex{color:var(--muted);font-size:.85rem}
+.tag{font-family:var(--f-mono);font-size:.7rem;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.tag.late{background:var(--alert-soft);color:var(--alert)} .tag.soon{background:var(--warn-soft);color:var(--warn)} .tag.ok{background:var(--accent-soft);color:var(--accent)}
+.phase{font-family:var(--f-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding:12px 0 2px}
+.ev{display:grid;grid-template-columns:auto 6.4em 1fr;gap:10px;padding:10px 0;align-items:start}
+.ev input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--accent)}
+.ev.done .what{opacity:.55;text-decoration:line-through}
+.ev.stop .what{color:var(--muted)}
+.ev .gcal{font-size:.75rem;color:var(--accent);text-decoration:none;font-family:var(--f-mono)}
+.confirm{border:1px solid var(--alert);border-radius:8px;padding:10px;background:var(--alert-soft);font-size:.9rem}
+.src{font-size:.82rem;color:var(--muted)}
+.src b{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.88rem;z-index:9;max-width:90vw}
+@media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<nav>
+  <button data-v="home" aria-current="true">Tableau</button>
+  <button data-v="new">Nouveau</button>
+  <button data-v="settings">Réglages</button>
+</nav>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+/* ===================== Stockage local ===================== */
+const KEY="suivi-uro-data-v1";
+let db={patients:[],settings:{stopAge:85}};
+function load(){try{const s=localStorage.getItem(KEY);if(s)db=Object.assign(db,JSON.parse(s))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){toast("Enregistrement impossible sur cet appareil")}}
+load();
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+
+/* ===================== Dates ===================== */
+const pad=n=>String(n).padStart(2,"0");
+const toISO=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromISO=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+function addMonths(d,m){const r=new Date(d);const w=Math.floor(m);r.setMonth(r.getMonth()+w);r.setDate(r.getDate()+Math.round((m-w)*30));return r}
+const fmt=s=>fromISO(s).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});
+const rel=m=>m<12?`M${m}`:(m%12===0?`A${m/12}`:`M${m}`);
+const todayISO=()=>toISO(new Date());
+const daysTo=s=>Math.round((fromISO(s)-fromISO(todayISO()))/864e5);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ===================== Protocoles ===================== */
+const PROTOCOLS={
+  pro:{name:"Prostatectomie totale",version:"v1",validated:false,
+    source:"CCAFU, actualisation 2024–2026 (cancer de la prostate, récidive) : 1er PSA dans les 3 mois, puis tous les 6 mois pendant 3 à 5 ans, puis annuel.",
+    local:"3 ou 5 ans de phase semestrielle selon l'anatomopathologie, horizon de 10 ans, âge d'arrêt : choix à valider."},
+  rein:{name:"Chirurgie du rein localisé",version:"v1",validated:false,
+    source:"CCAFU, tableau de suivi après chirurgie du cancer du rein localisé (version 2018–2020). À confronter à l'actualisation 2024–2026 et à l'amendement 2025.",
+    local:"Groupe de risque par score UISS (N0M0). Adjuvant : critères KEYNOTE-564. Âge d'arrêt : choix à valider."}
+};
+
+function planProstate(p){
+  const unfav=p.pt==="pT3b"||p.pt==="pT4"||+p.isup>=4||p.r==="R1"||p.n==="pN1";
+  const sem=unfav?5:3;
+  const crit=[p.pt==="pT3b"||p.pt==="pT4"?p.pt:null,+p.isup>=4?"ISUP "+p.isup:null,p.r==="R1"?"marge R1":null,p.n==="pN1"?"pN1":null].filter(Boolean);
+  const chips=[[`${p.pt} · ISUP ${p.isup} · ${p.r} · ${p.n}`],[unfav?"Anatomopathologie défavorable":"Anatomopathologie favorable",unfav?"hi":""],[`Semestriel ${sem} ans`,unfav?"mid":""]];
+  const why=unfav?`Critère défavorable (${crit.join(", ")}) : phase semestrielle de 5 ans, borne haute de la fourchette de 3 à 5 ans.`:"Aucun critère défavorable : phase semestrielle de 3 ans, borne basse de la fourchette de 3 à 5 ans.";
+  const alerts=[];
+  if(p.n==="pN1")alerts.push(["<b>pN1</b> : dossier à présenter en RCP (hormonothérapie, radiothérapie)."]);
+  if(p.r==="R1"||p.pt.startsWith("pT3")||p.pt==="pT4")alerts.push([`<b>${[p.pt.startsWith("pT3")||p.pt==="pT4"?p.pt:null,p.r==="R1"?"R1":null].filter(Boolean).join(" + ")}</b> : discuter en RCP radiothérapie adjuvante ou rattrapage précoce selon la cinétique du PSA.`]);
+  alerts.push(["Si le 1er PSA est détectable : contrôle à 3 mois. Récidive biologique au-delà de 0,2 ng/mL confirmé.","info"]);
+  const ev=[{m:2,phase:"Premier contrôle",title:"Consultation + 1er PSA total",exam:"PSA attendu indétectable (dosage dans les 3 mois). Continence, fonction érectile.",short:"PSA"}];
+  for(let m=6;m<=sem*12;m+=6)ev.push({m,phase:`Semestriel · ${sem} ans`,title:"Consultation + PSA total",exam:"PSA semestriel tant qu'il reste indétectable.",short:"PSA"});
+  for(let y=sem+1;y<=10;y++)ev.push({m:y*12,phase:"Annuel",title:"Consultation + PSA total",exam:"PSA annuel.",short:"PSA"});
+  return{chips,why,alerts,ev};
+}
+function uiss(pt,g,ecog,n){
+  if(n==="pN1")return"high";
+  const T=pt.startsWith("pT1")?1:pt.startsWith("pT2")?2:pt.startsWith("pT3")?3:4;
+  if(T===4)return"high"; if(T===1)return(g<=2&&ecog===0)?"low":"mid"; if(T===2)return"mid";
+  if(g===1)return"mid"; return ecog===0?"mid":"high";
+}
+function planRein(p){
+  const g=+p.g,ecog=+p.ecog,gEff=p.histo==="chromo"?1:g,grp=uiss(p.pt,gEff,ecog,p.n);
+  const lab={low:"Faible risque",mid:"Risque intermédiaire",high:"Haut risque"}[grp];
+  const hl={cc:"Cellules claires",pap:"Papillaire",chromo:"Chromophobe",autre:"Autre histologie"}[p.histo];
+  const chips=[[`${hl} · ${p.pt} · ISUP ${p.histo==="chromo"?"n.a.":g} · ECOG ${ecog?"≥1":"0"}`],[lab+" (UISS)",grp==="high"?"hi":grp==="mid"?"mid":""],[grp==="low"?"Suivi 5 ans":"Suivi 10 ans"]];
+  let why=`Groupe calculé par le score UISS (stade, grade, ECOG${p.n==="pN1"?", atteinte ganglionnaire":""}).`;
+  if(p.histo==="chromo")why+=" Grade ISUP non validé pour le chromophobe : non pris en compte.";
+  if(p.histo==="pap"||p.histo==="autre")why+=" UISS construit surtout sur les cellules claires : classement à confirmer.";
+  const T=p.pt.startsWith("pT1")?1:p.pt.startsWith("pT2")?2:p.pt.startsWith("pT3")?3:4;
+  const alerts=[];
+  if(p.histo==="cc"&&(T>=3||(T===2&&g===4)||p.n==="pN1"))alerts.push(["<b>Cellules claires, risque intermédiaire-élevé ou élevé</b> : discuter en RCP un pembrolizumab adjuvant (dans les 12 semaines)."]);
+  if(p.n==="pN1")alerts.push(["<b>pN1</b> : dossier à présenter en RCP."]);
+  alerts.push(["Créatinine et DFG à chaque contrôle (surveillance de la fonction rénale).","info"]);
+  const img=grp==="low"?"TDM TAP (alternance possible écho ou IRM rénale)":"TDM TAP, ou IRM abdominale + TDM thoracique";
+  const ev=[];const push=(m,phase)=>ev.push({m,phase,title:"Consultation + imagerie",exam:img+" · créatinine/DFG",short:"imagerie + créat"});
+  if(grp==="low"){push(6,"Contrôle initial");[12,24,36].forEach(m=>push(m,"Annuel · 3 ans"));push(60,"Contrôle final")}
+  else if(grp==="mid"){[6,12,18,24].forEach(m=>push(m,"Semestriel · 2 ans"));[36,48,60].forEach(m=>push(m,"Annuel · 3 ans"));[84,108].forEach(m=>push(m,"Tous les 2 ans"))}
+  else{[6,12,18,24,30,36].forEach(m=>push(m,"Semestriel · 3 ans"));[48,60,72].forEach(m=>push(m,"Annuel · 3 ans"));[96,120].forEach(m=>push(m,"Tous les 2 ans"))}
+  return{chips,why,alerts,ev};
+}
+function buildPlan(op,p,dateISO,age){
+  const r=op==="pro"?planProstate(p):planRein(p);
+  const d0=fromISO(dateISO),stop=+db.settings.stopAge||200;
+  const out=[];
+  for(const e of r.ev){
+    const date=toISO(addMonths(d0,e.m)),ageAt=+age+e.m/12;
+    if(ageAt>stop){out.push({m:e.m,date,phase:e.phase,stop:true,title:`Fin du suivi systématique (${Math.floor(ageAt)} ans)`,exam:"Réglage du praticien. Suivi ensuite sur point d'appel ou décision individuelle.",short:""});break}
+    out.push({...e,date,done:false});
+  }
+  return{...r,events:out};
+}
+
+/* ===================== Formulaires ===================== */
+const FIELDS={
+  pro:[["pt","Stade pT",["pT2","pT3a","pT3b","pT4"],"pT2"],["isup","Groupe ISUP",["1","2","3","4","5"],"2"],["r","Marges",["R0","R1"],"R0"],["n","Ganglions",["pN0","pN1","pNx"],"pN0"]],
+  rein:[["type","Intervention",["Néphrectomie partielle","Néphrectomie élargie"],"Néphrectomie partielle"],["histo","Histologie",[["cc","Cellules claires"],["pap","Papillaire"],["chromo","Chromophobe"],["autre","Autre"]],"cc"],["pt","Stade pT",["pT1a","pT1b","pT2a","pT2b","pT3a","pT3b","pT3c","pT4"],"pT1a"],["g","Grade ISUP",["1","2","3","4"],"2"],["ecog","ECOG",[["0","0"],["1","≥ 1"]],"0"],["n","Ganglions",["pN0/Nx","pN1"],"pN0/Nx"]]
+};
+
+/* ===================== Vues ===================== */
+const app=document.getElementById("app");
+let view="home",current=null,draft={op:"pro",params:{}};
+
+function statusOf(p){
+  const pend=p.events.filter(e=>!e.done&&!e.stop);
+  const next=pend[0];const late=pend.filter(e=>daysTo(e.date)<0).length;
+  return{next,late};
+}
+function tagFor(e){const d=daysTo(e.date);if(d<0)return`<span class="tag late">En retard</span>`;if(d<=30)return`<span class="tag soon">J-${d}</span>`;return""}
+
+function renderHome(){
+  const all=[];db.patients.forEach(p=>p.events.forEach((e,i)=>{if(!e.done&&!e.stop)all.push({p,e,i})}));
+  all.sort((a,b)=>a.e.date.localeCompare(b.e.date));
+  const late=all.filter(x=>daysTo(x.e.date)<0),soon=all.filter(x=>{const d=daysTo(x.e.date);return d>=0&&d<=30});
+  const line=x=>`<li><button class="item" data-open="${x.p.id}"><div class="when">${fmt(x.e.date)}<small>${rel(x.e.m)}</small></div><div class="what"><strong>${esc(x.p.ref)}</strong><div class="ex">${PROTOCOLS[x.p.op].name} · ${esc(x.e.short)}</div></div>${tagFor(x.e)}</button></li>`;
+  const pts=[...db.patients].sort((a,b)=>{const na=statusOf(a).next,nb=statusOf(b).next;return(na?na.date:"9")<(nb?nb.date:"9")?-1:1});
+  app.innerHTML=`
+    <header><h1>Suivi uro</h1><p class="sub">${db.patients.length} patient${db.patients.length>1?"s":""} suivi${db.patients.length>1?"s":""}</p></header>
+    <section class="card"><h2>En retard</h2>${late.length?`<ul class="list">${late.map(line).join("")}</ul>`:`<p class="empty">Aucun contrôle en retard.</p>`}</section>
+    <section class="card"><h2>Dans les 30 jours</h2><p class="sub" style="margin-bottom:6px">Ordonnances et rendez-vous à prévoir.</p>${soon.length?`<ul class="list">${soon.map(line).join("")}</ul>`:`<p class="empty">Rien à prévoir ce mois-ci.</p>`}</section>
+    <section class="card"><h2>Patients</h2>${pts.length?`<ul class="list">${pts.map(p=>{const s=statusOf(p);return`<li><button class="item" data-open="${p.id}"><div class="when">${s.next?fmt(s.next.date):"—"}<small>${s.next?"prochain":"terminé"}</small></div><div class="what"><strong>${esc(p.ref)}</strong><div class="ex">${PROTOCOLS[p.op].name} · opéré le ${fmt(p.date)}</div></div>${s.late?`<span class="tag late">${s.late} en retard</span>`:""}</button></li>`}).join("")}</ul>`:`<p class="empty">Aucun patient pour l'instant. Ajoutez une intervention dans l'onglet « Nouveau ».</p>`}</section>`;
+}
+
+function fieldHTML(op){
+  return FIELDS[op].map(([k,lab,opts,def])=>{
+    const v=draft.params[k]??def;draft.params[k]=v;
+    return`<label>${lab}<select data-k="${k}">${opts.map(o=>{const[val,txt]=Array.isArray(o)?o:[o,o];return`<option value="${val}"${val===v?" selected":""}>${txt}</option>`}).join("")}</select></label>`}).join("");
+}
+function previewHTML(plan){
+  let h=`<div class="chips">${plan.chips.map(c=>`<span class="chip ${c[1]||""}">${c[0]}</span>`).join("")}</div><p class="why">${plan.why}</p>`;
+  if(plan.alerts.length)h+=`<div class="stack" style="margin-top:10px">${plan.alerts.map(a=>`<div class="alert ${a[1]||""}">${a[0]}</div>`).join("")}</div>`;
+  return h;
+}
+function renderNew(){
+  draft.date=draft.date||todayISO();draft.age=draft.age??"";draft.ref=draft.ref??"";
+  app.innerHTML=`
+    <header><h1>Nouvelle intervention</h1><p class="sub">Identifiant pseudonymisé uniquement : initiales + n° de dossier.</p></header>
+    <section class="card stack">
+      <div class="seg"><button data-op="pro" aria-pressed="${draft.op==="pro"}">Prostatectomie totale</button><button data-op="rein" aria-pressed="${draft.op==="rein"}">Chirurgie du rein</button></div>
+      <div class="form">
+        <label>Identifiant<input id="f-ref" value="${esc(draft.ref)}" placeholder="ex. JD-10452" autocomplete="off"></label>
+        <label>Date d'intervention<input id="f-date" type="date" value="${draft.date}"></label>
+        <label>Âge<input id="f-age" type="number" inputmode="numeric" min="18" max="100" value="${draft.age}" placeholder="ans"></label>
+        ${fieldHTML(draft.op)}
+      </div>
+    </section>
+    <section class="card" id="preview"></section>
+    <div class="row"><button class="btn primary" id="f-save">Enregistrer et générer le suivi</button></div>`;
+  const upd=()=>{
+    draft.ref=document.getElementById("f-ref").value.trim();draft.date=document.getElementById("f-date").value;draft.age=document.getElementById("f-age").value;
+    const ok=draft.date&&draft.age;
+    document.getElementById("preview").innerHTML=ok?`<h2>Aperçu</h2>${previewHTML(buildPlan(draft.op,draft.params,draft.date,draft.age))}<p class="sub" style="margin-top:8px">${buildPlan(draft.op,draft.params,draft.date,draft.age).events.filter(e=>!e.stop).length} contrôles programmés.</p>`:`<p class="empty">Renseignez la date et l'âge pour voir le calcul.</p>`;
+  };
+  app.querySelectorAll("[data-op]").forEach(b=>b.onclick=()=>{draft.op=b.dataset.op;draft.params={};renderNew()});
+  app.querySelectorAll("select[data-k]").forEach(s=>s.onchange=()=>{draft.params[s.dataset.k]=s.value;upd()});
+  ["f-ref","f-date","f-age"].forEach(id=>document.getElementById(id).oninput=upd);
+  document.getElementById("f-save").onclick=()=>{
+    upd();
+    if(!draft.ref){toast("Ajoutez un identifiant patient");return}
+    if(!draft.date||!draft.age){toast("Date et âge obligatoires");return}
+    const plan=buildPlan(draft.op,draft.params,draft.date,draft.age);
+    const p={id:Date.now().toString(36),ref:draft.ref,op:draft.op,date:draft.date,age:+draft.age,params:{...draft.params},protocol:PROTOCOLS[draft.op].version,events:plan.events,created:todayISO()};
+    db.patients.push(p);save();draft={op:draft.op,params:{}};toast("Suivi enregistré");openPatient(p.id);
+  };
+  upd();
+}
+
+function gcalLink(p,e){
+  const d=e.date.replace(/-/g,""),n=toISO(new Date(fromISO(e.date).getTime()+864e5)).replace(/-/g,"");
+  const q=new URLSearchParams({action:"TEMPLATE",text:`Contrôle uro ${p.ref} – ${e.short}`,dates:`${d}/${n}`,details:`${e.title}. ${e.exam}`});
+  return"https://calendar.google.com/calendar/render?"+q.toString();
+}
+function renderPatient(){
+  const p=db.patients.find(x=>x.id===current);if(!p){go("home");return}
+  const plan=buildPlan(p.op,p.params,p.date,p.age);
+  let phase="",tl="";
+  p.events.forEach((e,i)=>{
+    if(e.phase!==phase){phase=e.phase;tl+=`<div class="phase">${esc(phase)}</div>`}
+    tl+=`<div class="ev ${e.done?"done":""} ${e.stop?"stop":""}">${e.stop?"<span></span>":`<input type="checkbox" data-i="${i}" ${e.done?"checked":""} aria-label="Contrôle fait">`}<div class="when">${fmt(e.date)}<small>${e.stop?"—":rel(e.m)}</small></div><div class="what"><strong>${esc(e.title)}</strong> ${!e.done&&!e.stop?tagFor(e):""}<div class="ex">${esc(e.exam)}</div>${!e.done&&!e.stop?`<a class="gcal" href="${gcalLink(p,e)}" target="_blank" rel="noopener">+ Google Agenda</a>`:""}</div></div>`;
+  });
+  const pr=PROTOCOLS[p.op];
+  app.innerHTML=`
+    <header><button class="btn" id="back">← Tableau</button></header>
+    <header><h1>${esc(p.ref)}</h1><p class="sub">${pr.name} le ${fmt(p.date)} · ${p.age} ans</p></header>
+    <section class="card">${previewHTML(plan)}</section>
+    <section class="card"><h2>Calendrier</h2>${tl}</section>
+    <section class="card stack">
+      <h2>Rappels</h2>
+      <p class="sub">Exporte tous les contrôles restants vers l'agenda du téléphone, avec une alerte 30 jours avant chacun (ordonnance + rendez-vous).</p>
+      <div class="row"><button class="btn primary" id="ics">Exporter vers l'agenda</button></div>
+    </section>
+    <p class="src">Protocole ${pr.name} ${p.protocol} · ${pr.validated?"validé":"non validé"}</p>
+    <div id="del-zone"><button class="btn danger" id="del">Supprimer ce patient</button></div>`;
+  document.getElementById("back").onclick=()=>go("home");
+  app.querySelectorAll("input[data-i]").forEach(c=>c.onchange=()=>{p.events[+c.dataset.i].done=c.checked;save();renderPatient()});
+  document.getElementById("ics").onclick=()=>exportICS(p);
+  document.getElementById("del").onclick=()=>{
+    document.getElementById("del-zone").innerHTML=`<div class="confirm stack"><span>Supprimer définitivement ${esc(p.ref)} et son calendrier ?</span><div class="row"><button class="btn danger" id="del-yes">Supprimer</button><button class="btn" id="del-no">Annuler</button></div></div>`;
+    document.getElementById("del-yes").onclick=()=>{db.patients=db.patients.filter(x=>x.id!==p.id);save();toast("Patient supprimé");go("home")};
+    document.getElementById("del-no").onclick=renderPatient;
+  };
+}
+
+function renderSettings(){
+  app.innerHTML=`
+    <header><h1>Réglages</h1></header>
+    <section class="card stack">
+      <h2>Âge d'arrêt du suivi systématique</h2>
+      <p class="sub">Choix du praticien, non issu des recommandations. S'applique aux nouveaux patients.</p>
+      <label style="max-width:160px">Âge (ans)<input id="s-stop" type="number" min="60" max="110" value="${db.settings.stopAge}"></label>
+    </section>
+    <section class="card stack">
+      <h2>Sauvegarde</h2>
+      <p class="sub">Les données restent uniquement sur cet appareil. Exportez régulièrement une sauvegarde : vider les données du navigateur efface tout.</p>
+      <div class="row"><button class="btn primary" id="s-exp">Exporter la sauvegarde</button><label class="btn" style="display:inline-block;color:var(--ink);font-size:.95rem;letter-spacing:0">Restaurer<input type="file" id="s-imp" accept=".json,application/json" hidden></label></div>
+    </section>
+    <section class="card stack src">
+      <h2>Protocoles</h2>
+      ${Object.values(PROTOCOLS).map(pr=>`<div><b>${pr.name} · ${pr.version} · ${pr.validated?"validé":"non validé"}</b><br>${pr.source}<br><i>Choix local :</i> ${pr.local}</div>`).join("")}
+      <p>Prototype de test. Les protocoles doivent être relus et validés par le praticien avant tout usage clinique.</p>
+    </section>`;
+  document.getElementById("s-stop").onchange=e=>{db.settings.stopAge=+e.target.value||85;save();toast("Réglage enregistré")};
+  document.getElementById("s-exp").onclick=()=>download(`suivi-uro-sauvegarde-${todayISO()}.json`,JSON.stringify(db,null,1),"application/json");
+  document.getElementById("s-imp").onchange=e=>{
+    const f=e.target.files[0];if(!f)return;const r=new FileReader();
+    r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.patients))throw 0;db=Object.assign({settings:{stopAge:85}},d);save();toast(`${db.patients.length} patients restaurés`);go("home")}catch(err){toast("Fichier de sauvegarde invalide")}};
+    r.readAsText(f);
+  };
+}
+
+/* ===================== Export ===================== */
+function icsEsc(s){return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n")}
+function exportICS(p){
+  const stamp=new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  const evs=p.events.filter(e=>!e.done&&!e.stop&&daysTo(e.date)>=0);
+  if(!evs.length){toast("Aucun contrôle à venir à exporter");return}
+  const lines=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Suivi uro//FR","CALSCALE:GREGORIAN","METHOD:PUBLISH"];
+  evs.forEach(e=>{
+    const d=e.date.replace(/-/g,""),n=toISO(new Date(fromISO(e.date).getTime()+864e5)).replace(/-/g,"");
+    lines.push("BEGIN:VEVENT",`UID:${p.id}-${e.m}@suivi-uro`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${n}`,
+      `SUMMARY:${icsEsc(`Contrôle uro ${p.ref} – ${e.short}`)}`,`DESCRIPTION:${icsEsc(`${e.title}. ${e.exam}`)}`,
+      "BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsEsc(`Ordonnance + RDV ${p.ref}`)}`,"TRIGGER:-P30D","END:VALARM","END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  download(`suivi-${p.ref.replace(/[^\w-]/g,"_")}.ics`,lines.join("\r\n"),"text/calendar");
+}
+async function download(name,text,type){
+  const blob=new Blob([text],{type});
+  try{const file=new File([blob],name,{type});if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:name});return}}catch(e){if(e&&e.name==="AbortError")return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),5000);
+}
+
+/* ===================== Navigation ===================== */
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2400)}
+function go(v){view=v;document.querySelectorAll("nav button").forEach(b=>b.setAttribute("aria-current",b.dataset.v===v||(v==="patient"&&b.dataset.v==="home")));
+  ({home:renderHome,new:renderNew,settings:renderSettings,patient:renderPatient})[v]();window.scrollTo(0,0)}
+function openPatient(id){current=id;go("patient")}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
+app.addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)openPatient(b.dataset.open)});
+go("home");
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+</script>
+</body>
+</html>
