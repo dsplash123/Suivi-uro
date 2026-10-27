@@ -1,6 +1,6 @@
 // Cache de l'application pour un fonctionnement hors connexion.
 // Changer VERSION à chaque mise à jour des fichiers.
-const VERSION = "suivi-uro-v1";
+const VERSION = "suivi-uro-v2";
 const FILES = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "icon-maskable-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

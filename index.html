@@ -101,6 +101,7 @@ function addMonths(d,m){const r=new Date(d);const w=Math.floor(m);r.setMonth(r.g
 const fmt=s=>fromISO(s).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"});
 const rel=m=>m<12?`M${m}`:(m%12===0?`A${m/12}`:`M${m}`);
 const todayISO=()=>toISO(new Date());
+function ageAt(dob,date){const b=fromISO(dob),d=fromISO(date);let a=d.getFullYear()-b.getFullYear();if(d.getMonth()<b.getMonth()||(d.getMonth()===b.getMonth()&&d.getDate()<b.getDate()))a--;return a}
 const daysTo=s=>Math.round((fromISO(s)-fromISO(todayISO()))/864e5);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
@@ -208,34 +209,35 @@ function previewHTML(plan){
   return h;
 }
 function renderNew(){
-  draft.date=draft.date||todayISO();draft.age=draft.age??"";draft.ref=draft.ref??"";
+  draft.date=draft.date||todayISO();draft.ini=draft.ini??"";draft.dob=draft.dob??"";
   app.innerHTML=`
-    <header><h1>Nouvelle intervention</h1><p class="sub">Identifiant pseudonymisé uniquement : initiales + n° de dossier.</p></header>
+    <header><h1>Nouvelle intervention</h1><p class="sub">Patient identifié par ses initiales et sa date de naissance. L'âge est calculé automatiquement.</p></header>
     <section class="card stack">
       <div class="seg"><button data-op="pro" aria-pressed="${draft.op==="pro"}">Prostatectomie totale</button><button data-op="rein" aria-pressed="${draft.op==="rein"}">Chirurgie du rein</button></div>
       <div class="form">
-        <label>Identifiant<input id="f-ref" value="${esc(draft.ref)}" placeholder="ex. JD-10452" autocomplete="off"></label>
+        <label>Initiales<input id="f-ini" value="${esc(draft.ini)}" placeholder="ex. JD" maxlength="5" autocomplete="off" autocapitalize="characters"></label>
+        <label>Date de naissance<input id="f-dob" type="date" value="${draft.dob}"></label>
         <label>Date d'intervention<input id="f-date" type="date" value="${draft.date}"></label>
-        <label>Âge<input id="f-age" type="number" inputmode="numeric" min="18" max="100" value="${draft.age}" placeholder="ans"></label>
         ${fieldHTML(draft.op)}
       </div>
     </section>
     <section class="card" id="preview"></section>
     <div class="row"><button class="btn primary" id="f-save">Enregistrer et générer le suivi</button></div>`;
   const upd=()=>{
-    draft.ref=document.getElementById("f-ref").value.trim();draft.date=document.getElementById("f-date").value;draft.age=document.getElementById("f-age").value;
+    draft.ini=document.getElementById("f-ini").value.trim().toUpperCase();draft.dob=document.getElementById("f-dob").value;draft.date=document.getElementById("f-date").value;draft.age=draft.dob&&draft.date?ageAt(draft.dob,draft.date):"";
     const ok=draft.date&&draft.age;
-    document.getElementById("preview").innerHTML=ok?`<h2>Aperçu</h2>${previewHTML(buildPlan(draft.op,draft.params,draft.date,draft.age))}<p class="sub" style="margin-top:8px">${buildPlan(draft.op,draft.params,draft.date,draft.age).events.filter(e=>!e.stop).length} contrôles programmés.</p>`:`<p class="empty">Renseignez la date et l'âge pour voir le calcul.</p>`;
+    document.getElementById("preview").innerHTML=ok?`<h2>Aperçu · ${draft.age} ans à l'intervention</h2>${previewHTML(buildPlan(draft.op,draft.params,draft.date,draft.age))}<p class="sub" style="margin-top:8px">${buildPlan(draft.op,draft.params,draft.date,draft.age).events.filter(e=>!e.stop).length} contrôles programmés.</p>`:`<p class="empty">Renseignez la date de naissance et la date d'intervention pour voir le calcul.</p>`;
   };
   app.querySelectorAll("[data-op]").forEach(b=>b.onclick=()=>{draft.op=b.dataset.op;draft.params={};renderNew()});
   app.querySelectorAll("select[data-k]").forEach(s=>s.onchange=()=>{draft.params[s.dataset.k]=s.value;upd()});
-  ["f-ref","f-date","f-age"].forEach(id=>document.getElementById(id).oninput=upd);
+  ["f-ini","f-dob","f-date"].forEach(id=>document.getElementById(id).oninput=upd);
   document.getElementById("f-save").onclick=()=>{
     upd();
-    if(!draft.ref){toast("Ajoutez un identifiant patient");return}
-    if(!draft.date||!draft.age){toast("Date et âge obligatoires");return}
+    if(!draft.ini){toast("Ajoutez les initiales du patient");return}
+    if(!draft.dob||!draft.date){toast("Date de naissance et date d'intervention obligatoires");return}
+    if(draft.age<0||draft.age>110){toast("Vérifiez la date de naissance");return}
     const plan=buildPlan(draft.op,draft.params,draft.date,draft.age);
-    const p={id:Date.now().toString(36),ref:draft.ref,op:draft.op,date:draft.date,age:+draft.age,params:{...draft.params},protocol:PROTOCOLS[draft.op].version,events:plan.events,created:todayISO()};
+    const p={id:Date.now().toString(36),ref:`${draft.ini} ${fromISO(draft.dob).toLocaleDateString("fr-FR")}`,initials:draft.ini,dob:draft.dob,op:draft.op,date:draft.date,age:+draft.age,params:{...draft.params},protocol:PROTOCOLS[draft.op].version,events:plan.events,created:todayISO()};
     db.patients.push(p);save();draft={op:draft.op,params:{}};toast("Suivi enregistré");openPatient(p.id);
   };
   upd();
