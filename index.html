@@ -20,6 +20,7 @@
   --bg:#111816; --surface:#18211e; --ink:#e3ebe8; --muted:#97a6a0; --line:#2b3733;
   --accent:#6fc2ad; --on-accent:#0f1715; --accent-soft:#1d3530; --warn:#e2ad62; --warn-soft:#352a17; --alert:#ef8a82; --alert-soft:#3a1f1d; color-scheme:dark}}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{margin:0}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;-webkit-tap-highlight-color:transparent}
 .wrap{max-width:760px;margin:0 auto;padding-top:max(16px,env(safe-area-inset-top));padding-bottom:calc(84px + env(safe-area-inset-bottom));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));display:grid;gap:16px}
@@ -71,11 +72,23 @@ select,input{font-size:.95rem;color:var(--ink);background:var(--bg);border:1px s
 .confirm{border:1px solid var(--alert);border-radius:8px;padding:10px;background:var(--alert-soft);font-size:.9rem}
 .src{font-size:.82rem;color:var(--muted)}
 .src b{color:var(--ink)}
+.lock{position:fixed;inset:0;z-index:20;background:var(--bg);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-right)) 24px max(16px,env(safe-area-inset-left))}
+.lock-box{display:grid;gap:14px;justify-items:center;text-align:center;max-width:320px}
+.lock-box img{width:72px;height:72px;border-radius:16px}
+.lock-box p{margin:0;color:var(--muted);font-size:.9rem}
 .toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.88rem;z-index:9;max-width:90vw}
 @media (prefers-reduced-motion:no-preference){.toast{transition:opacity .2s}}
 </style>
 </head>
 <body>
+<div class="lock" id="lock" hidden>
+  <div class="lock-box">
+    <img src="icon-192.png" alt="">
+    <h1>Suivi uro</h1>
+    <p id="lock-msg">Déverrouillez avec votre empreinte.</p>
+    <button class="btn primary" id="lock-btn">Déverrouiller</button>
+  </div>
+</div>
 <div class="wrap" id="app"></div>
 <nav>
   <button data-v="home" aria-current="true">Tableau</button>
@@ -288,6 +301,11 @@ function renderSettings(){
       <label style="max-width:160px">Âge (ans)<input id="s-stop" type="number" min="60" max="110" value="${db.settings.stopAge}"></label>
     </section>
     <section class="card stack">
+      <h2>Verrouillage par empreinte</h2>
+      <p class="sub">${db.settings.lockId?"Activé. L'app demande l'empreinte à l'ouverture et après 1 minute en arrière-plan. Le code du téléphone reste possible en secours.":"Demande l'empreinte digitale (ou le code du téléphone) à chaque ouverture de l'app."}</p>
+      <div class="row">${db.settings.lockId?`<button class="btn danger" id="s-lock-off">Désactiver</button>`:`<button class="btn primary" id="s-lock-on">Activer</button>`}</div>
+    </section>
+    <section class="card stack">
       <h2>Sauvegarde</h2>
       <p class="sub">Les données restent uniquement sur cet appareil. Exportez régulièrement une sauvegarde : vider les données du navigateur efface tout.</p>
       <div class="row"><button class="btn primary" id="s-exp">Exporter la sauvegarde</button><label class="btn" style="display:inline-block;color:var(--ink);font-size:.95rem;letter-spacing:0">Restaurer<input type="file" id="s-imp" accept=".json,application/json" hidden></label></div>
@@ -297,6 +315,9 @@ function renderSettings(){
       ${Object.values(PROTOCOLS).map(pr=>`<div><b>${pr.name} · ${pr.version} · ${pr.validated?"validé":"non validé"}</b><br>${pr.source}<br><i>Choix local :</i> ${pr.local}</div>`).join("")}
       <p>Prototype de test. Les protocoles doivent être relus et validés par le praticien avant tout usage clinique.</p>
     </section>`;
+  const on=document.getElementById("s-lock-on"),off=document.getElementById("s-lock-off");
+  if(on)on.onclick=enableLock;
+  if(off)off.onclick=()=>{delete db.settings.lockId;save();toast("Verrouillage désactivé");renderSettings()};
   document.getElementById("s-stop").onchange=e=>{db.settings.stopAge=+e.target.value||85;save();toast("Réglage enregistré")};
   document.getElementById("s-exp").onclick=()=>download(`suivi-uro-sauvegarde-${todayISO()}.json`,JSON.stringify(db,null,1),"application/json");
   document.getElementById("s-imp").onchange=e=>{
@@ -335,6 +356,46 @@ function go(v){view=v;document.querySelectorAll("nav button").forEach(b=>b.setAt
 function openPatient(id){current=id;go("patient")}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.v));
 app.addEventListener("click",e=>{const b=e.target.closest("[data-open]");if(b)openPatient(b.dataset.open)});
+/* ===================== Verrouillage biométrique (WebAuthn) ===================== */
+const b64u={enc:buf=>btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,""),
+  dec:str=>{str=str.replace(/-/g,"+").replace(/_/g,"/");while(str.length%4)str+="=";return Uint8Array.from(atob(str),c=>c.charCodeAt(0))}};
+const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
+async function lockSupported(){try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(e){return false}}
+async function enableLock(){
+  if(!await lockSupported()){toast("Empreinte non disponible sur cet appareil ou ce navigateur");return}
+  try{
+    const cred=await navigator.credentials.create({publicKey:{challenge:rnd(32),rp:{name:"Suivi uro",id:location.hostname},
+      user:{id:rnd(16),name:"suivi-uro",displayName:"Suivi uro"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"preferred"},timeout:60000}});
+    db.settings.lockId=b64u.enc(cred.rawId);save();toast("Verrouillage activé");renderSettings();
+  }catch(e){toast("Activation annulée")}
+}
+let unlocking=false;
+async function unlock(){
+  if(unlocking)return;unlocking=true;
+  const msg=document.getElementById("lock-msg");
+  try{
+    const a=await navigator.credentials.get({publicKey:{challenge:rnd(32),rpId:location.hostname,
+      allowCredentials:[{type:"public-key",id:b64u.dec(db.settings.lockId)}],userVerification:"required",timeout:60000}});
+    const flags=new Uint8Array(a.response.authenticatorData)[32];
+    if(!(flags&4))throw new Error("uv");
+    document.getElementById("lock").hidden=true;document.getElementById("app").hidden=false;document.querySelector("nav").hidden=false;
+  }catch(e){msg.textContent="Échec ou annulation. Appuyez sur Déverrouiller pour réessayer."}
+  unlocking=false;
+}
+function showLock(){
+  if(!db.settings.lockId)return false;
+  document.getElementById("lock").hidden=false;document.getElementById("app").hidden=true;document.querySelector("nav").hidden=true;
+  document.getElementById("lock-msg").textContent="Déverrouillez avec votre empreinte.";
+  unlock();return true;
+}
+document.getElementById("lock-btn").onclick=unlock;
+let hiddenAt=0;
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)hiddenAt=Date.now();
+  else if(hiddenAt&&Date.now()-hiddenAt>60000&&document.getElementById("lock").hidden)showLock();
+});
+showLock();
 go("home");
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
 </script>
